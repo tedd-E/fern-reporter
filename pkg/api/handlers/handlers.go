@@ -165,6 +165,17 @@ func (h *Handler) ReportTestRunById(c *gin.Context) {
 	})
 }
 
+func (h *Handler) ReportTestInsights(c *gin.Context) {
+	var testRun models.TestRun
+	id := c.Param("id")
+	//TODO: preload the right table....need to figure that part out
+	h.db.Preload("SuiteRuns.SpecRuns").Where("id = ?", id).First(&testRun)
+	c.HTML(http.StatusOK, "insights.html", gin.H{
+		"reportHeader": config.GetHeaderName(),
+		"testRuns":     []models.TestRun{testRun},
+	})
+}
+
 func (h *Handler) Ping(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "Fern Reporter is running!",
