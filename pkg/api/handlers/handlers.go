@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/guidewire/fern-reporter/pkg/models"
 
@@ -166,14 +167,25 @@ func (h *Handler) ReportTestRunById(c *gin.Context) {
 }
 
 func (h *Handler) ReportTestInsights(c *gin.Context) {
-	var testRun models.TestRun
+	var testRuns []models.TestRun
+	var projectName string
 	id := c.Param("id")
-	//TODO: preload the right table....need to figure that part out
-	h.db.Preload("SuiteRuns.SpecRuns").Where("id = ?", id).First(&testRun)
-	c.HTML(http.StatusOK, "insights.html", gin.H{
-		"reportHeader": config.GetHeaderName(),
-		"testRuns":     []models.TestRun{testRun},
-	})
+	h.db.Model(&models.TestRun{}).Where("id = ?", id).Pluck("test_project_name", &projectName) //extract project name corresponding to ID
+
+	window := time.Now().AddDate(0, 0, -30) //TODO: parameterize
+	h.db.Preload("TestRuns").Where("test_project_name = ?", projectName).Where("start_time >= ?", window).Find(&testRuns)
+	//TODO: add functions here that calculate insights with the query output in testRuns
+	/*
+		1. Average sliding window time for tests:
+		    a. include average for each individual test, as well as all tests in a project
+		2. most time consuming tests top 10
+		3. total tests run over the period of time
+		4. success rate of each test over the window of time
+		    a. tests that fail the most often
+		5. success rate of the entire suite over the window of time
+	*/
+
+	c.HTML(http.StatusOK, "insights.html", gin.H{})
 }
 
 func (h *Handler) Ping(c *gin.Context) {
