@@ -116,7 +116,7 @@
             <td class="test-name">{{ $specRun.SpecDescription }}</td>
             <td class="test-status">{{ $specRun.Status}}</td>
             <td class="test-duration">{{ CalculateDuration $specRun.StartTime $specRun.EndTime }}</td>
-            <td><button class="button is-info insights-btn">Insights</button></td>
+            <td><button class="button is-info insights-btn" data-insights-url="/insights/{{ $specRun.ID }}">Insights</button></td>
             <td>
               {{ $tags := $specRun.Tags }}
               {{ range $tag := $tags}}
@@ -163,9 +163,6 @@
         testRows.forEach((row) => {
           const insightsRow = row.nextElementSibling;
           const detailsRow = insightsRow.nextElementSibling;
-          // const detailsRow = row.nextElementSibling;
-          // const insightsRow = detailsRow.nextElementSibling;
-
           const testStatus = row.querySelector('.test-status').textContent.toLowerCase();
           if (testStatus === 'failed') {
             row.classList.add('failed-row');
@@ -182,29 +179,11 @@
               row.querySelector('.expand-icon').classList.add('fa-minus');
             }
           });
-          //TODO: for REASONS UNKNOWN this button is not showing the right thing, figure out why
-          row.querySelector('.insights-btn').addEventListener('click', () => {
-            if (insightsRow.style.display === 'table-row') {
-              insightsRow.style.display = 'none';
-            } else {
-              insightsRow.style.display = 'table-row';
-              console.log("insightsRow: ", insightsRow)
-              detailsRow.style.display = 'none';
 
-              // TODO: Fetch the insights HTML page, passing in current run ID
-              // let fetchedHTML;
-              // fetch('insights.html')
-              //     .then(response => response.text())
-              //     .then(html => {
-              //       html = fetchedHTML;
-              //       // Insert the fetched HTML content into the insights section
-              //       insightsRow.innerHTML = html;
-              //       // Display the insights section
-              //       detailsRow.style.display = 'none';
-              //       insightsRow.style.display = 'table-row';
-              //     })
-              //     .catch(error => console.error('Error fetching page:', error));
-              }
+          row.querySelector('.insights-btn').addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent the row click event from firing
+            const insightsUrl = event.target.getAttribute('data-insights-url');
+            window.open(insightsUrl, '_blank');
           });
         });
       });

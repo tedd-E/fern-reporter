@@ -166,26 +166,55 @@ func (h *Handler) ReportTestRunById(c *gin.Context) {
 	})
 }
 
+//TODO: add functions here that calculate insights with the query output in testRuns
+/*
+	1. Average sliding window time for tests:
+	    a. include average for each individual test, as well as all tests in a project
+	2. most time consuming tests top 10
+	3. total tests run over the period of time
+	4. success rate of each test over the window of time
+	    a. tests that fail the most often
+	5. success rate of the entire suite over the window of time
+*/
+
 func (h *Handler) ReportTestInsights(c *gin.Context) {
-	var testRuns []models.TestRun
 	var projectName string
 	id := c.Param("id")
 	h.db.Model(&models.TestRun{}).Where("id = ?", id).Pluck("test_project_name", &projectName) //extract project name corresponding to ID
 
-	window := time.Now().AddDate(0, 0, -30) //TODO: parameterize
-	h.db.Preload("TestRuns").Where("test_project_name = ?", projectName).Where("start_time >= ?", window).Find(&testRuns)
-	//TODO: add functions here that calculate insights with the query output in testRuns
-	/*
-		1. Average sliding window time for tests:
-		    a. include average for each individual test, as well as all tests in a project
-		2. most time consuming tests top 10
-		3. total tests run over the period of time
-		4. success rate of each test over the window of time
-		    a. tests that fail the most often
-		5. success rate of the entire suite over the window of time
-	*/
+	//h.db.Preload("TestRuns").Where("test_project_name = ?", projectName).Where("start_time >= ?", window).Find(&testRuns)
 
-	c.HTML(http.StatusOK, "insights.html", gin.H{})
+	c.HTML(http.StatusOK, "insights.html", gin.H{
+		"reportHeader":    config.GetHeaderName(),
+		"projectName":     projectName,
+		"averageDuration": GetAverageDuration(h, projectName),
+		"testRuns":        GetLongestTestRuns(h, projectName),
+	})
+}
+
+// returns longest specs
+// h.db.Preload("SuiteRuns.SpecRuns.Tags").Find(&testRuns)
+func GetLongestTestRuns(h *Handler, projectName string) []models.TestRun {
+	var testRuns []models.TestRun
+	h.db.Table("test_runs").
+		Select("*, (EXTRACT(EPOCH FROM end_time) - EXTRACT(EPOCH FROM start_time)) AS duration").
+		Where("test_project_name = ?", projectName).
+		Order("duration DESC").
+		Limit(10).
+		Find(&testRuns)
+
+	return testRuns
+}
+
+func GetAverageDuration(h *Handler, projectName string) float64 {
+	window := time.Now().AddDate(0, 0, -30) //TODO: parameterize
+	var averageDuration float64
+	h.db.Table("test_runs").
+		Select("AVG(EXTRACT(EPOCH FROM (end_time - start_time)))").
+		Where("test_project_name = ?", projectName).
+		Where("start_time >= ?", window).
+		Scan(&averageDuration)
+	return averageDuration
 }
 
 func (h *Handler) Ping(c *gin.Context) {

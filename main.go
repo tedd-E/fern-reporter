@@ -17,6 +17,7 @@ import (
 )
 
 //go:embed pkg/views/test_runs.html
+//go:embed pkg/views/insights.html
 var testRunsTemplate embed.FS
 
 func main() {
@@ -50,7 +51,8 @@ func initServer() {
 	funcMap := template.FuncMap{
 		"CalculateDuration": CalculateDuration,
 	}
-	templ, err := template.New("").Funcs(funcMap).ParseFS(testRunsTemplate, "pkg/views/test_runs.html")
+
+	templ, err := template.New("").Funcs(funcMap).ParseFS(testRunsTemplate, "pkg/views/test_runs.html", "pkg/views/insights.html")
 	if err != nil {
 		log.Fatalf("error parsing templates: %v", err)
 	}
