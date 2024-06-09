@@ -70,37 +70,41 @@
         <div class="notification is-info">
             <strong>Insights page for {{ .projectName }}</strong> <br>
             <strong>Average Duration:</strong> {{ .averageDuration }} seconds
-            {{ .testRun }}
         </div>
       <table class="table is-fullwidth">
+          <caption style="font-weight: bold">Top Ten Time Consuming Tests</caption> <!--          TODO : parameterize the "ten" -->
         <thead>
           <tr>
             <th>Test Run ID</th>
             <th>Test Project Name</th>
             <th>Test Duration</th>
+            <th>Spec Pass Rate</th>
             <th>Test Details</th>
           </tr>
         </thead>
         <tbody>
-<!--        TODO: data not loading properly, debug -->
-        {{ $testRuns := .testRuns }}
-        {{range $testRun := $testRuns}}
+        {{ range .testRuns }}
             <tr class="test-row">
-                <td class="test-serial-number">{{ $testRun.TestRunID }}</td>
-            <td class="test-project-name">{{ $testRun.TestProjectName }}</td>
-            <td class="test-duration">{{ CalculateDuration $testRun.StartTime $testRun.EndTime }}</td>
-            <td><button class="button is-info testdetails-btn" testdetails-url="/testruns/{{ $testRun.ID }}">Test Details</button></td>
+            <td class="test-serial-number">{{ .ID }}</td>
+            <td class="test-project-name">{{ .TestProjectName }}</td>
+            <td class="test-duration">{{ CalculateDuration .StartTime .EndTime }}</td>
+            <td class="spec-pass-rate"> TODO </td> <!-- TODO: populate -->
+            <td><button class="button is-info testdetails-btn" testdetails-url="/reports/testruns/{{ .ID }}">Test Details</button></td>
           </tr>
         {{end}}
     </tbody>
     </table>
+
+<!--        TODO: add most time consuming specs table here-->
     </div>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-          row.querySelector('.testdetails-btn').addEventListener('click', (event) => {
-            event.stopPropagation(); // Prevent the row click event from firing
-            const testUrl = event.target.getAttribute('testdetails-url');
-            window.open(testUrl, '_blank');
+          document.querySelectorAll('.testdetails-btn').forEach(function (button) {
+              button.addEventListener('click', function (event) {
+                  event.stopPropagation();
+                  const testUrl = event.target.getAttribute('testdetails-url');
+                  window.open(testUrl, '_blank');
+              });
           });
       });
     </script>
