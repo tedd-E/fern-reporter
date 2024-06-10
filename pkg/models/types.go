@@ -39,11 +39,11 @@ type SpecRun struct {
 }
 
 type TestRunInsight struct {
-	SuiteID         uint64 `json:"suite_id" gorm:"column:id"`
-	TestProjectName string `json:"test_project_name"`
-	//TestDuration    time.Time `json:"test_duration"`
-	TestDuration float32 `json:"test_duration"`
-	PassRate     float32 `json:"pass_rate"`
+	SuiteID         uint64    `json:"suite_id" gorm:"column:id"`
+	TestProjectName string    `json:"test_project_name"`
+	StartTime       time.Time `json:"start_time"`
+	EndTime         time.Time `json:"end_time"`
+	PassRate        float32   `json:"pass_rate"`
 }
 
 type Tag struct {

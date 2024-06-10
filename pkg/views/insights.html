@@ -34,10 +34,18 @@
   <body>
     <div class="container">
       <h1 class="title is-3 has-text-centered has-background-primary has-text-white p-4">{{ .reportHeader }}</h1>
+        <table style="width: 100%;">
+            <tr>
+                <td>
+<!--                    TODO: add button here-->
+                </td>
+            </tr>
+        </table>
+
         <div class="notification is-info">
             <strong>Insights page for {{ .projectName }}</strong> <br>
             <strong>Average Duration:</strong> {{ .averageDuration }} seconds
-            {{ .testRuns }}
+            <strong>Total Tests Within Time Period: </strong> {{.numTests }}
         </div>
       <table class="table is-fullwidth">
           <caption style="font-weight: bold">Top Ten Time Consuming Tests</caption> <!--          TODO : parameterize the "ten" -->
@@ -47,6 +55,7 @@
             <th>Test Project Name</th>
             <th>Test Duration</th>
             <th>Spec Pass Rate</th>
+            <th>Date</th>
             <th>Test Details</th>
           </tr>
         </thead>
@@ -56,15 +65,15 @@
             <tr class="test-row">
             <td class="test-serial-number">{{ $testRun.SuiteID }}</td>
             <td class="test-project-name">{{ $testRun.TestProjectName }}</td>
-            <td class="test-duration">{{ $testRun.TestDuration  }} seconds</td>  <!-- TODO: match duration for other-->
+            <td class="test-duration">{{ CalculateDuration $testRun.StartTime $testRun.EndTime  }}</td>
             <td class="spec-pass-rate"> {{ $testRun.PassRate }}% </td>
+            <td class="spec-pass-rate"> {{ FormatDate $testRun.StartTime }} </td>
             <td><button class="button is-info testdetails-btn" testdetails-url="/reports/testruns/{{ .SuiteID }}">Test Details</button></td>
           </tr>
         {{end}}
     </tbody>
     </table>
 
-<!--        TODO: add most time consuming specs table here-->
     </div>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
