@@ -125,11 +125,6 @@
             </td>
             <i class="expand-icon fas fa-plus"></i>
           </tr>
-          <tr class="insights" style="display: none;">
-            <td colspan="4">
-              <div class="insights-content">Insights content goes here</div>
-            </td>
-          </tr>
           <tr class="details" style="display: none;">
             <td></td>
             <td colspan="4">
@@ -161,8 +156,7 @@
       document.addEventListener('DOMContentLoaded', function() {
         const testRows = document.querySelectorAll('.test-row');
         testRows.forEach((row) => {
-          const insightsRow = row.nextElementSibling;
-          const detailsRow = insightsRow.nextElementSibling;
+          const detailsRow = row.nextElementSibling;
           const testStatus = row.querySelector('.test-status').textContent.toLowerCase();
           if (testStatus === 'failed') {
             row.classList.add('failed-row');
@@ -174,7 +168,6 @@
               row.querySelector('.expand-icon').classList.add('fa-plus');
             } else {
               detailsRow.style.display = 'table-row';
-              insightsRow.style.display = 'none';
               row.querySelector('.expand-icon').classList.remove('fa-plus');
               row.querySelector('.expand-icon').classList.add('fa-minus');
             }

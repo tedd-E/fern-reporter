@@ -26,39 +26,6 @@
         background-color: #f0f0f0;
       }
 
-      .status-passed {
-        color: #2ecc71;
-        font-weight: bold;
-      }
-
-      .status-failed {
-        color: #e74c3c;
-        font-weight: bold;
-      }
-
-      .expand-icon {
-        color: #3498db;
-        font-size: 1.2em;
-        margin-left: 5px;
-      }
-
-      .expand-section {
-        background-color: #2ecc71;
-        padding: 10px;
-        color: #ffffff;
-      }
-
-      .failed-section {
-        background-color: #e74c3c;
-        padding: 10px;
-        color: #ffffff;
-      }
-
-      .test-name {
-        max-width: 400px;
-        word-wrap: break-word;
-      }
-
       .table td {
         word-wrap: break-word;
       }
@@ -70,6 +37,7 @@
         <div class="notification is-info">
             <strong>Insights page for {{ .projectName }}</strong> <br>
             <strong>Average Duration:</strong> {{ .averageDuration }} seconds
+            {{ .testRuns }}
         </div>
       <table class="table is-fullwidth">
           <caption style="font-weight: bold">Top Ten Time Consuming Tests</caption> <!--          TODO : parameterize the "ten" -->
@@ -83,13 +51,14 @@
           </tr>
         </thead>
         <tbody>
-        {{ range .testRuns }}
+        {{ $testRuns := .testRuns }}
+        {{range $testRun := $testRuns}}
             <tr class="test-row">
-            <td class="test-serial-number">{{ .ID }}</td>
-            <td class="test-project-name">{{ .TestProjectName }}</td>
-            <td class="test-duration">{{ CalculateDuration .StartTime .EndTime }}</td>
-            <td class="spec-pass-rate"> TODO </td> <!-- TODO: populate -->
-            <td><button class="button is-info testdetails-btn" testdetails-url="/reports/testruns/{{ .ID }}">Test Details</button></td>
+            <td class="test-serial-number">{{ $testRun.SuiteID }}</td>
+            <td class="test-project-name">{{ $testRun.TestProjectName }}</td>
+            <td class="test-duration">{{ $testRun.TestDuration  }} seconds</td>  <!-- TODO: match duration for other-->
+            <td class="spec-pass-rate"> {{ $testRun.PassRate }}% </td>
+            <td><button class="button is-info testdetails-btn" testdetails-url="/reports/testruns/{{ .SuiteID }}">Test Details</button></td>
           </tr>
         {{end}}
     </tbody>
