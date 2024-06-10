@@ -32,6 +32,6 @@ func RegisterRouters(router *gin.Engine) {
 	}
 	insights := router.Group("/insights")
 	{
-		insights.GET("/:id", handler.ReportTestInsights)
+		insights.GET("/:name", handler.ReportTestInsights)
 	}
 }

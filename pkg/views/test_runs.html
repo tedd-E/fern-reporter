@@ -116,7 +116,7 @@
             <td class="test-name">{{ $specRun.SpecDescription }}</td>
             <td class="test-status">{{ $specRun.Status}}</td>
             <td class="test-duration">{{ CalculateDuration $specRun.StartTime $specRun.EndTime }}</td>
-            <td><button class="button is-info insights-btn" data-insights-url="/insights/{{ $specRun.SuiteID }}">Insights</button></td>
+            <td><button class="button is-info insights-btn" data-insights-url="/insights/{{ $testRun.TestProjectName }}">Insights</button></td>
             <td>
               {{ $tags := $specRun.Tags }}
               {{ range $tag := $tags}}

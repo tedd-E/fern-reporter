@@ -166,20 +166,16 @@ func (h *Handler) ReportTestRunById(c *gin.Context) {
 	})
 }
 
-//TODO: add functions here that calculate insights with the query output in testRuns
-/*
-	1. Average sliding window time for tests:
-	    a. include average for each individual test, as well as all tests in a project
-	2. most time consuming tests top 10
-	3. total tests run over the period of time
-	4. success rate of each test over the window of time
-	    a. tests that fail the most often
-	5. success rate of the entire suite over the window of time
+/* TODO
+1. [DONE] Average sliding window time for tests
+2. [DONE] most time consuming tests top 10
+3. [DONE] total tests run over the period of time
+4. [DONE] success rate of each test over the window of time
+5. [DONE] success rate of the entire suite over the window of time (note: this ended up being kind of same as #4)
 */
 
 func (h *Handler) ReportTestInsights(c *gin.Context) {
-	var projectName string
-	id := c.Param("id")
+	projectName := c.Param("name")
 	timePeriod := c.DefaultQuery("timePeriod", "720h")
 
 	duration, err := time.ParseDuration(timePeriod)
@@ -189,44 +185,16 @@ func (h *Handler) ReportTestInsights(c *gin.Context) {
 	}
 
 	window := time.Now().Add(-duration)
-	h.db.Model(&models.TestRun{}).Where("id = ?", id).Pluck("test_project_name", &projectName) //extract project name corresponding to ID
 
 	testRuns := GetLongestTestRuns(h, projectName, window)
 	c.HTML(http.StatusOK, "insights.html", gin.H{
 		"reportHeader":    config.GetHeaderName(),
 		"projectName":     projectName,
+		"timePeriod":      timePeriod,
 		"averageDuration": GetAverageDuration(h, projectName, window),
 		"testRuns":        testRuns, //TODO: rename testRuns to longestTestRuns or smth clearer
 		"numTests":        len(testRuns),
 	})
-}
-
-func GetLongestTestRuns(h *Handler, projectName string, window time.Time) []models.TestRunInsight {
-	var testRuns []models.TestRunInsight
-
-	h.db.Table("test_runs").
-		Joins("INNER JOIN suite_runs ON test_runs.id = suite_runs.test_run_id").
-		Joins("INNER JOIN spec_runs ON suite_runs.id = spec_runs.suite_id").
-		Select("suite_runs.id, test_runs.test_project_name, test_runs.start_time, test_runs.end_time,"+
-			//"(test_runs.end_time - test_runs.start_time) AS test_duration, "+
-			//"(EXTRACT(EPOCH FROM test_runs.end_time) - EXTRACT(EPOCH FROM test_runs.start_time)) AS test_duration, "+
-			"ROUND(AVG(CASE WHEN spec_runs.status = 'passed' THEN 100.0 ELSE 0.0 END), 3) AS pass_rate").
-		Where("test_runs.start_time >= ?", window).
-		Where("test_project_name = ?", projectName).
-		Group("suite_runs.id, test_runs.test_project_name, test_runs.start_time, test_runs.end_time").
-		Find(&testRuns)
-
-	return testRuns
-}
-
-func GetAverageDuration(h *Handler, projectName string, window time.Time) float64 {
-	var averageDuration float64
-	h.db.Table("test_runs").
-		Select("AVG(EXTRACT(EPOCH FROM (end_time - start_time)))").
-		Where("test_project_name = ?", projectName).
-		Where("start_time >= ?", window).
-		Scan(&averageDuration)
-	return averageDuration
 }
 
 func (h *Handler) Ping(c *gin.Context) {

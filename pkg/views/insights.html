@@ -17,6 +17,11 @@
         margin-top: 20px;
       }
 
+      caption {
+          font-size: 1.5em; /* Adjust the font size as needed */
+          font-weight: bold; /* Optionally, make the caption bold */
+      }
+
       .test-row {
         cursor: pointer;
         transition: background-color 0.3s, color 0.3s;
@@ -37,25 +42,50 @@
         <table style="width: 100%;">
             <tr>
                 <td>
-<!--                    TODO: add button here-->
+                  <div class="field">
+                    <label class="label">Select Time Period</label>
+                    <div class="control">
+                      <div class="select">
+                        <select id="timePeriodSelect">
+                            <option value="15m" {{ if eq .timePeriod "15m" }}selected{{ end }}>15 minutes</option>
+                            <option value="1h" {{ if eq .timePeriod "1h" }}selected{{ end }}>1 hour</option>
+                            <option value="4h" {{ if eq .timePeriod "4h" }}selected{{ end }}>4 hours</option>
+                            <option value="24h" {{ if eq .timePeriod "24h" }}selected{{ end }}>1 day</option>
+                            <option value="48h" {{ if eq .timePeriod "48h" }}selected{{ end }}>2 days</option>
+                            <option value="168h" {{ if eq .timePeriod "168h" }}selected{{ end }}>1 week</option>
+                            <option value="336h" {{ if eq .timePeriod "336h" }}selected{{ end }}>2 weeks</option>
+                            <option value="720h" {{ if eq .timePeriod "720h" }}selected{{ end }}>1 month</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
                 </td>
             </tr>
         </table>
 
-        <div class="notification is-info">
-            <strong>Insights page for {{ .projectName }}</strong> <br>
-            <strong>Average Duration:</strong> {{ .averageDuration }} seconds
-            <strong>Total Tests Within Time Period: </strong> {{.numTests }}
-        </div>
-      <table class="table is-fullwidth">
-          <caption style="font-weight: bold">Top Ten Time Consuming Tests</caption> <!--          TODO : parameterize the "ten" -->
+        <table class="table is-bordered is-narrow is-fullwidth">
+            <caption style="font-weight: bold">Summary of Test Insights</caption>
+            <tbody>
+            <tr>
+                <th>Project Name</th>
+                <th>Average Duration (sec)</th>
+                <th>Total Tests Within Time Period</th>
+            </tr>
+            <td>{{ .projectName }}</td>
+            <td>{{ .averageDuration }} </td>
+            <td>{{ .numTests }}</td>
+            </tbody>
+        </table>
+
+        <table class="table is-fullwidth">
+          <caption style="font-weight: bold">Top Ten Time Consuming Tests</caption>
         <thead>
           <tr>
             <th>Test Run ID</th>
             <th>Test Project Name</th>
             <th>Test Duration</th>
             <th>Spec Pass Rate</th>
-            <th>Date</th>
+            <th>Test Date</th>
             <th>Test Details</th>
           </tr>
         </thead>
@@ -68,7 +98,7 @@
             <td class="test-duration">{{ CalculateDuration $testRun.StartTime $testRun.EndTime  }}</td>
             <td class="spec-pass-rate"> {{ $testRun.PassRate }}% </td>
             <td class="spec-pass-rate"> {{ FormatDate $testRun.StartTime }} </td>
-            <td><button class="button is-info testdetails-btn" testdetails-url="/reports/testruns/{{ .SuiteID }}">Test Details</button></td>
+            <td><button class="button is-info testdetails-btn" testdetails-url="/reports/testruns/{{ $testRun.SuiteID }}">Test Details</button></td>
           </tr>
         {{end}}
     </tbody>
@@ -83,6 +113,13 @@
                   const testUrl = event.target.getAttribute('testdetails-url');
                   window.open(testUrl, '_blank');
               });
+          });
+
+          document.getElementById('timePeriodSelect').addEventListener('change', function () {
+              const select = document.getElementById('timePeriodSelect');
+              const timePeriod = select.value;
+              const projectName = "{{ .projectName }}";
+              window.location.href = `/insights/${projectName}?timePeriod=${timePeriod}`;
           });
       });
     </script>
