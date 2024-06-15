@@ -174,7 +174,7 @@
           });
 
           row.querySelector('.insights-btn').addEventListener('click', (event) => {
-            event.stopPropagation(); // Prevent the row click event from firing
+            event.stopPropagation();
             const insightsUrl = event.target.getAttribute('data-insights-url');
             window.open(insightsUrl, '_blank');
           });

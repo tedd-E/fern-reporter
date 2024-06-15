@@ -3,16 +3,14 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/guidewire/fern-reporter/config"
+	"github.com/guidewire/fern-reporter/pkg/models"
+	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/guidewire/fern-reporter/pkg/models"
-
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type Handler struct {
@@ -166,8 +164,8 @@ func (h *Handler) ReportTestRunById(c *gin.Context) {
 	})
 }
 
-/* TODO
-1. [DONE] Average sliding window time for tests
+/* TODO https://www.daterangepicker.com/
+1. Average sliding window time for tests. Implement: https://www.daterangepicker.com/
 2. [DONE] most time consuming tests top 10
 3. [DONE] total tests run over the period of time
 4. [DONE] success rate of each test over the window of time
@@ -176,24 +174,27 @@ func (h *Handler) ReportTestRunById(c *gin.Context) {
 
 func (h *Handler) ReportTestInsights(c *gin.Context) {
 	projectName := c.Param("name")
-	timePeriod := c.DefaultQuery("timePeriod", "720h")
+	startTimeInput := c.Query("startTime")
+	endTimeInput := c.Query("endTime")
 
-	duration, err := time.ParseDuration(timePeriod)
+	startTime, err := ParseTimeFromStringWithDefault(startTimeInput, time.Now().AddDate(-69, 0, 0))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid timePeriod parameter"})
-		return
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid startTime parameter: %v", err)})
+	}
+	endTime, err := ParseTimeFromStringWithDefault(endTimeInput, time.Now())
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid endTimeInput parameter: %v", err)})
 	}
 
-	window := time.Now().Add(-duration)
-
-	testRuns := GetLongestTestRuns(h, projectName, window)
+	longestTestRuns := GetLongestTestRuns(h, projectName, startTime, endTime)
 	c.HTML(http.StatusOK, "insights.html", gin.H{
 		"reportHeader":    config.GetHeaderName(),
 		"projectName":     projectName,
-		"timePeriod":      timePeriod,
-		"averageDuration": GetAverageDuration(h, projectName, window),
-		"testRuns":        testRuns, //TODO: rename testRuns to longestTestRuns or smth clearer
-		"numTests":        len(testRuns),
+		"startTime":       startTime,
+		"endTime":         endTime,
+		"averageDuration": GetAverageDuration(h, projectName, startTime, endTime),
+		"longestTestRuns": longestTestRuns,
+		"numTests":        len(longestTestRuns),
 	})
 }
 
