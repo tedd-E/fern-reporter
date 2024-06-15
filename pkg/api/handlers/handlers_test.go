@@ -994,6 +994,106 @@ var _ = Describe("Handlers", func() {
 
 	})
 
+	Context("When ReportTestInsights is invoked", func() {
+
+		When("given a query for a test project name that exists in the test history", func() {
+			testProjectName := "TestProject"
+			When("a query is made for a time range that overlaps with the tests", func() {
+				startTime := "2024-04-19T00:00:00"
+				endTime := "2024-04-22T00:00:00"
+
+				It("should return a summary of the test insights", func() {
+
+					w := httptest.NewRecorder()
+					c, _ := gin.CreateTestContext(w)
+					jsonStr := []byte(`{"name":"TestProject"}`)
+					rows := sqlmock.NewRows([]string{"id", "test_project_name", "start_time", "end_time", "pass_rate", "duration"}).
+						AddRow(1, "TestProject", time.Date(2024, 4, 20, 12, 0, 0, 0, time.UTC),
+							time.Date(2024, 4, 20, 12, 1, 0, 0, time.UTC), 100.000, 60).
+						AddRow(2, "TestProject", time.Date(2024, 4, 21, 12, 0, 0, 0, time.UTC),
+							time.Date(2024, 4, 21, 12, 1, 0, 0, time.UTC), 33.333, 60)
+
+					mock.ExpectBegin()
+					mock.ExpectQuery(`SELECT suite_runs.id, test_runs.test_project_name, test_runs.start_time, test_runs.end_time, `+
+						`ROUND(AVG(CASE WHEN spec_runs.status = 'passed' THEN 100.0 ELSE 0.0 END), 3) AS pass_rate, `+
+						`(test_runs.end_time - test_runs.start_time) AS duration FROM test_runs INNER JOIN suite_runs ON test_runs.id = suite_runs.test_run_id `+
+						`INNER JOIN spec_runs ON suite_runs.id = spec_runs.suite_id WHERE test_runs.start_time >= $1 AND test_runs.start_time <= $2 `+
+						`AND test_project_name = $3 GROUP BY suite_runs.id, test_runs.test_project_name, test_runs.start_time, test_runs.end_time ORDER BY duration DESC`).
+						WithArgs(startTime, endTime, testProjectName).
+						WillReturnRows(rows)
+
+					req, err := http.NewRequest("POST", "/insights/", bytes.NewBuffer(jsonStr))
+					if err != nil {
+						fmt.Printf("%v", err)
+					}
+					req.Header.Set("Content-Type", "application/json")
+
+					c.Request = req
+					handler := handlers.NewHandler(gormDb)
+					handler.ReportTestInsights(c)
+
+					Expect(w.Code).To(Equal(http.StatusOK))
+				})
+			})
+			When("given a time range that does not include the test projects", func() {
+				startTime := "2024-03-01T00:00:00"
+				endTime := "2024-03-05T00:00:00"
+
+				It("should return a summary of the test insights", func() {
+
+					w := httptest.NewRecorder()
+					c, _ := gin.CreateTestContext(w)
+					jsonStr := []byte(`{"name":"TestProject"}`)
+					rows := sqlmock.NewRows([]string{"id", "test_project_name", "start_time", "end_time", "pass_rate", "duration"}).
+						AddRow(1, "TestProject", time.Date(2024, 4, 20, 12, 0, 0, 0, time.UTC),
+							time.Date(2024, 4, 20, 12, 1, 0, 0, time.UTC), 100.000, 60).
+						AddRow(2, "TestProject", time.Date(2024, 4, 21, 12, 0, 0, 0, time.UTC),
+							time.Date(2024, 4, 21, 12, 1, 0, 0, time.UTC), 33.333, 60)
+
+					mock.ExpectBegin()
+					mock.ExpectQuery(`SELECT suite_runs.id, test_runs.test_project_name, test_runs.start_time, test_runs.end_time, `+
+						`ROUND(AVG(CASE WHEN spec_runs.status = 'passed' THEN 100.0 ELSE 0.0 END), 3) AS pass_rate, `+
+						`(test_runs.end_time - test_runs.start_time) AS duration FROM test_runs INNER JOIN suite_runs ON test_runs.id = suite_runs.test_run_id `+
+						`INNER JOIN spec_runs ON suite_runs.id = spec_runs.suite_id WHERE test_runs.start_time >= $1 AND test_runs.start_time <= $2 `+
+						`AND test_project_name = $3 GROUP BY suite_runs.id, test_runs.test_project_name, test_runs.start_time, test_runs.end_time ORDER BY duration DESC`).
+						WithArgs(startTime, endTime, testProjectName).
+						WillReturnRows(rows)
+
+					req, err := http.NewRequest("POST", "/insights/", bytes.NewBuffer(jsonStr))
+					if err != nil {
+						fmt.Printf("%v", err)
+					}
+					req.Header.Set("Content-Type", "application/json")
+
+					c.Request = req
+					handler := handlers.NewHandler(gormDb)
+					handler.ReportTestInsights(c)
+
+					Expect(w.Code).To(Equal(http.StatusOK))
+				})
+			})
+		})
+
+		When("given an invalid test project name that does not exist from a past test run", func() {
+			jsonStr := []byte(`{"name":"NonexistentProject"}`)
+			It("should return empty data without erroring out", func() {
+				w := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(w)
+				req, err := http.NewRequest("POST", "/insights/", bytes.NewBuffer(jsonStr))
+				if err != nil {
+					fmt.Printf("%v", err)
+				}
+				req.Header.Set("Content-Type", "application/json")
+
+				c.Request = req
+				handler := handlers.NewHandler(gormDb)
+				handler.ReportTestInsights(c)
+
+				Expect(w.Code).To(Equal(http.StatusOK))
+			})
+		})
+	})
+
 	//Context("When ReportTestRunById handler is invoked", func() {
 	//	It("should query DB with where clause filtering by id", func() {
 	//

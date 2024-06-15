@@ -164,7 +164,7 @@ func (h *Handler) ReportTestRunById(c *gin.Context) {
 	})
 }
 
-/* TODO https://www.daterangepicker.com/
+/*
 1. Average sliding window time for tests. Implement: https://www.daterangepicker.com/
 2. [DONE] most time consuming tests top 10
 3. [DONE] total tests run over the period of time
