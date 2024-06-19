@@ -177,7 +177,7 @@ func (h *Handler) ReportTestInsights(c *gin.Context) {
 	startTimeInput := c.Query("startTime")
 	endTimeInput := c.Query("endTime")
 
-	startTime, err := ParseTimeFromStringWithDefault(startTimeInput, time.Now().AddDate(-69, 0, 0))
+	startTime, err := ParseTimeFromStringWithDefault(startTimeInput, time.Now().AddDate(-1, 0, 0))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid startTime parameter: %v", err)})
 	}
@@ -187,12 +187,16 @@ func (h *Handler) ReportTestInsights(c *gin.Context) {
 	}
 
 	longestTestRuns := GetLongestTestRuns(h, projectName, startTime, endTime)
+	averageDuration := GetAverageDuration(h, projectName, startTime, endTime)
+	fmt.Printf("longestTestRuns: %v\n", longestTestRuns)
+	fmt.Printf("averageDuration: %v\n", averageDuration)
+
 	c.HTML(http.StatusOK, "insights.html", gin.H{
 		"reportHeader":    config.GetHeaderName(),
 		"projectName":     projectName,
 		"startTime":       startTime,
 		"endTime":         endTime,
-		"averageDuration": GetAverageDuration(h, projectName, startTime, endTime),
+		"averageDuration": averageDuration,
 		"longestTestRuns": longestTestRuns,
 		"numTests":        len(longestTestRuns),
 	})

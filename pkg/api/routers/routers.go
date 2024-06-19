@@ -24,7 +24,6 @@ func RegisterRouters(router *gin.Engine) {
 	{
 		testRunReport := reports.GET("/", handler.ReportTestRunAll)
 		testRunReport.GET("/:id", handler.ReportTestRunById)
-		testRunReport.GET("/:id/insights", handler.ReportTestInsights)
 	}
 	ping := router.Group("/ping")
 	{
