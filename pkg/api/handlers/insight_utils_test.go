@@ -59,7 +59,7 @@ var _ = Describe("Insights", func() {
 		router.LoadHTMLGlob("../../views/insights.html")
 
 		When("given a query for a test project name that exists in the test history", func() {
-			testProjectName := "TestProject"
+			testProjectName := ""
 			_, err := config.LoadConfig()
 			Expect(err).NotTo(HaveOccurred())
 			When("a query is made for a time range that overlaps with the tests", func() {
@@ -74,14 +74,14 @@ var _ = Describe("Insights", func() {
 						AddRow(2, "TestProject", time.Date(2024, 4, 21, 12, 0, 0, 0, time.UTC),
 							time.Date(2024, 4, 21, 12, 1, 0, 0, time.UTC), 33.333, 60)
 
+					mock.ExpectQuery(regexp.QuoteMeta(`SELECT suite_runs.id, test_runs.test_project_name, test_runs.start_time, test_runs.end_time,ROUND(AVG(CASE WHEN spec_runs.status = 'passed' THEN 100.0 ELSE 0.0 END), 3) AS pass_rate, (test_runs.end_time - test_runs.start_time) AS duration FROM "test_runs" INNER JOIN suite_runs ON test_runs.id = suite_runs.test_run_id INNER JOIN spec_runs ON suite_runs.id = spec_runs.suite_id WHERE test_runs.start_time >= $1 AND test_runs.start_time <= $2 AND test_project_name = $3 GROUP BY suite_runs.id, test_runs.test_project_name, test_runs.start_time, test_runs.end_time ORDER BY duration DESC`)).
+						WithArgs(startTime, endTime, testProjectName).
+						WillReturnRows(rows)
+
 					//TODO: these queries do match (if run individually it's fine) but test is confusing them w each other
 					mock.ExpectQuery(regexp.QuoteMeta(`SELECT AVG(EXTRACT(EPOCH FROM (end_time - start_time))) FROM "test_runs" WHERE test_project_name = $1 AND start_time >= $2 AND start_time <= $3`)).
 						WithArgs(testProjectName, startTime, endTime).
 						WillReturnRows(sqlmock.NewRows([]string{"avg"}).AddRow(123.45))
-
-					mock.ExpectQuery(regexp.QuoteMeta(`SELECT suite_runs.id, test_runs.test_project_name, test_runs.start_time, test_runs.end_time,ROUND(AVG(CASE WHEN spec_runs.status = 'passed' THEN 100.0 ELSE 0.0 END), 3) AS pass_rate, (test_runs.end_time - test_runs.start_time) AS duration FROM "test_runs" INNER JOIN suite_runs ON test_runs.id = suite_runs.test_run_id INNER JOIN spec_runs ON suite_runs.id = spec_runs.suite_id WHERE test_runs.start_time >= $1 AND test_runs.start_time <= $2 AND test_project_name = $3 GROUP BY suite_runs.id, test_runs.test_project_name, test_runs.start_time, test_runs.end_time ORDER BY duration DESC`)).
-						WithArgs(startTime, endTime, testProjectName).
-						WillReturnRows(rows)
 
 					//TODO: c.engine.HTMLRender is nil, so c.engine.HTMLRender.Insights breaks (called in c.HTML(...))
 					w := httptest.NewRecorder()
@@ -95,7 +95,6 @@ var _ = Describe("Insights", func() {
 					c.Request.URL.RawQuery = q.Encode()
 
 					handler := handlers.NewHandler(gormDb)
-					//handler.ReportTestInsights(c)
 					router.GET("/insights", handler.ReportTestInsights)
 					router.ServeHTTP(w, c.Request)
 
