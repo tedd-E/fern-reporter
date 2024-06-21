@@ -143,13 +143,11 @@
         testRows.forEach((row) => {
           const testStatus = row.querySelector('.test-status').textContent.toLowerCase();
           const detailsRow = row.nextElementSibling;
-          const insightsRow = detailsRow.nextElementSibling;
           if (status === 'all' || testStatus === status) {
             row.style.display = 'table-row';
           } else {
             row.style.display = 'none';
             detailsRow.style.display = 'none';
-            insightsRow.style.display = 'none';
           }
         });
       }

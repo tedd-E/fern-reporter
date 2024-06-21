@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const timeQueryLayout = "2006-01-02T15:04:05"
+
 func GetLongestTestRuns(h *Handler, projectName string, startTimeRange time.Time, endTimeRange time.Time) []models.TestRunInsight {
 	var testRuns []models.TestRunInsight
 
@@ -39,8 +41,8 @@ func ParseTimeFromStringWithDefault(timeString string, defaultTime time.Time) (t
 	if timeString == "" {
 		return defaultTime, nil
 	}
-	layout := "2006-01-02T15:04:05"
-	parsedTime, err := time.Parse(layout, timeString)
+
+	parsedTime, err := time.Parse(timeQueryLayout, timeString)
 
 	if err != nil {
 		return time.Now(), err

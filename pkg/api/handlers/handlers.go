@@ -164,14 +164,6 @@ func (h *Handler) ReportTestRunById(c *gin.Context) {
 	})
 }
 
-/*
-1. Average sliding window time for tests. Implement: https://www.daterangepicker.com/
-2. [DONE] most time consuming tests top 10
-3. [DONE] total tests run over the period of time
-4. [DONE] success rate of each test over the window of time
-5. [DONE] success rate of the entire suite over the window of time (note: this ended up being kind of same as #4)
-*/
-
 func (h *Handler) ReportTestInsights(c *gin.Context) {
 	projectName := c.Param("name")
 	startTimeInput := c.Query("startTime")
@@ -187,6 +179,11 @@ func (h *Handler) ReportTestInsights(c *gin.Context) {
 	}
 
 	longestTestRuns := GetLongestTestRuns(h, projectName, startTime, endTime)
+	numTests := len(longestTestRuns)
+	if len(longestTestRuns) > 10 {
+		longestTestRuns = longestTestRuns[:10] //only send top 10 longest runs to display
+	}
+
 	averageDuration := GetAverageDuration(h, projectName, startTime, endTime)
 	fmt.Printf("longestTestRuns: %v\n", longestTestRuns)
 	fmt.Printf("averageDuration: %v\n", averageDuration)
@@ -198,7 +195,7 @@ func (h *Handler) ReportTestInsights(c *gin.Context) {
 		"endTime":         endTime,
 		"averageDuration": averageDuration,
 		"longestTestRuns": longestTestRuns,
-		"numTests":        len(longestTestRuns),
+		"numTests":        numTests,
 	})
 }
 
