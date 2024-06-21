@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/guidewire/fern-reporter/pkg/utils"
 	"html/template"
 	"log"
 
@@ -49,8 +50,8 @@ func initServer() {
 	}))
 
 	funcMap := template.FuncMap{
-		"CalculateDuration": CalculateDuration,
-		"FormatDate":        FormatDate,
+		"CalculateDuration": utils.CalculateDuration,
+		"FormatDate":        utils.FormatDate,
 	}
 
 	templ, err := template.New("").Funcs(funcMap).ParseFS(testRunsTemplate, "pkg/views/test_runs.html", "pkg/views/insights.html")
@@ -65,13 +66,4 @@ func initServer() {
 	if err != nil {
 		log.Fatalf("error starting routes: %v", err)
 	}
-}
-
-func CalculateDuration(start, end time.Time) string {
-	duration := end.Sub(start)
-	return duration.String() // or format as needed
-}
-
-func FormatDate(t time.Time) string {
-	return t.Format("2006-01-02 15:04:05")
 }

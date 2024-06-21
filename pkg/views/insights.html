@@ -65,7 +65,7 @@
                 <th>Total Tests Within Time Period</th>
             </tr>
             <td>{{ .projectName }}</td>
-            <td>{{ .averageDuration }} </td>
+            <td>{{ .averageDuration }}</td>
             <td>{{ .numTests }}</td>
             </tbody>
         </table>
@@ -89,8 +89,8 @@
             <td class="test-serial-number">{{ $testRun.SuiteID }}</td>
             <td class="test-project-name">{{ $testRun.TestProjectName }}</td>
             <td class="test-duration">{{ CalculateDuration $testRun.StartTime $testRun.EndTime  }}</td>
-            <td class="spec-pass-rate"> {{ $testRun.PassRate }}% </td>
-            <td class="spec-pass-rate"> {{ FormatDate $testRun.StartTime }} </td>
+            <td class="spec-pass-rate"> {{ $testRun.PassRate }}%</td>
+            <td class="spec-pass-rate"> {{ FormatDate $testRun.StartTime }}</td>
             <td><button class="button is-info testdetails-btn" testdetails-url="/reports/testruns/{{ $testRun.SuiteID }}">Test Details</button></td>
           </tr>
         {{end}}

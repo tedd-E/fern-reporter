@@ -40,10 +40,10 @@ func ParseTimeFromStringWithDefault(timeString string, defaultTime time.Time) (t
 		return defaultTime, nil
 	}
 	layout := "2006-01-02T15:04:05"
-	startTime, err := time.Parse(layout, timeString)
+	parsedTime, err := time.Parse(layout, timeString)
 
 	if err != nil {
 		return time.Now(), err
 	}
-	return startTime, nil
+	return parsedTime, nil
 }

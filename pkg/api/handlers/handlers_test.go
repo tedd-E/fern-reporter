@@ -825,11 +825,9 @@ var _ = Describe("Handlers", func() {
 			}
 
 			//mock.ExpectBegin()
-			mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "test_runs" WHERE id = $1 ORDER BY "test_runs"."id" LIMIT 1`)).
-				WithArgs("1").
-				WillReturnRows(mock.NewRows([]string{"id", "test_project_name", "test_seed"}).
-					AddRow(expectedTestRun.ID, expectedTestRun.TestProjectName, expectedTestRun.TestSeed))
-
+			mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "test_runs" WHERE id = $1 ORDER BY "test_runs"."id" LIMIT $2`)).
+				WithArgs("1", 1).WillReturnRows(mock.NewRows([]string{"id", "test_project_name", "test_seed"}).
+				AddRow(expectedTestRun.ID, expectedTestRun.TestProjectName, expectedTestRun.TestSeed))
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
 
@@ -994,8 +992,6 @@ var _ = Describe("Handlers", func() {
 		})
 
 	})
-
-	//TODO: move tests back
 
 	//Context("When ReportTestRunById handler is invoked", func() {
 	//	It("should query DB with where clause filtering by id", func() {
