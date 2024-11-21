@@ -26,39 +26,51 @@ func NewHandler(db *gorm.DB) *Handler {
 }
 
 func (h *Handler) CreateTestRun(c *gin.Context) {
-	var testRun models.TestRun
+	var testRunClient models.TestRun
+	var testRunDB models.TestRun
 
-	if err := c.ShouldBindJSON(&testRun); err != nil {
+	if err := c.ShouldBindJSON(&testRunClient); err != nil {
 		fmt.Print(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return // Stop further processing if there is a binding error
 	}
 
 	gdb := h.db
-	isNewRecord := testRun.ID == 0
+	result := gdb.Where("test_seed = ?", testRunClient.TestSeed).First(&testRunDB)
 
-	// If it's not a new record, try to find it first
-	if !isNewRecord {
-		if err := gdb.Where("id = ?", testRun.ID).First(&models.TestRun{}).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "record not found"})
-			return // Stop further processing if record not found
+	if result.Error != nil {
+		// If it is a new TestRun save to the database directly
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			fmt.Println("TestRun does not exist in the database")
+			saveTestRun(c, gdb, &testRunClient)
+			return
 		}
+		fmt.Printf("error fetching record: %v", result.Error)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error fetching record"})
+		return
 	}
+	// If TestRun already exists in the database, append to it
+	testRunDB.EndTime = testRunClient.EndTime
+	testRunDB.SuiteRuns = append(testRunDB.SuiteRuns, testRunClient.SuiteRuns...)
 
+	saveTestRun(c, gdb, &testRunDB)
+}
+
+func saveTestRun(c *gin.Context, gdb *gorm.DB, testRunDB *models.TestRun) {
 	// Process tags
-	err := ProcessTags(gdb, &testRun)
+	err := ProcessTags(gdb, testRunDB)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error processing tags"})
 		return // Stop further processing if tag processing fails
 	}
 
 	// Save or update the testRun record in the database
-	if err := gdb.Save(&testRun).Error; err != nil {
+	if err := gdb.Save(testRunDB).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "error saving record"})
 		return // Stop further processing if save fails
 	}
 
-	c.JSON(http.StatusCreated, &testRun)
+	c.JSON(http.StatusCreated, testRunDB)
 }
 
 func ProcessTags(db *gorm.DB, testRun *models.TestRun) error {
