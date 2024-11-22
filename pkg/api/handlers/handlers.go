@@ -41,12 +41,12 @@ func (h *Handler) CreateTestRun(c *gin.Context) {
 	if result.Error != nil {
 		// If it is a new TestRun save to the database directly
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			fmt.Println("TestRun does not exist in the database")
+			log.Println("No prior record of the TestRun was found in the database, creating a new entry.")
 			saveTestRun(c, gdb, &testRunClient)
 			return
 		}
-		fmt.Printf("error fetching record: %v", result.Error)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "error fetching record"})
+		log.Printf("An error occurred when querying for an existing TestRun record: %v", result.Error)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error fetching an existing TestRun record"})
 		return
 	}
 	// If TestRun already exists in the database, append to it

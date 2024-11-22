@@ -135,23 +135,36 @@ var _ = Describe("Handlers", func() {
 				},
 			}
 
-			_, err := json.Marshal(expectedTestRun.SuiteRuns)
+			jsonStr, err := json.Marshal(expectedTestRun)
 			if err != nil {
 				fmt.Printf("Error serializing SuiteRuns: %v", err)
 				return
 			}
 
-			mock.ExpectBegin()
-			mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "test_runs" ("test_project_name","test_seed","start_time","end_time") VALUES ($1,$2,$3,$4) RETURNING "id"`)).
+			//mock.ExpectBegin()
+			mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "test_runs" WHERE test_seed = $1 ORDER BY "test_runs"."id" LIMIT $2`)).
+				WithArgs(expectedTestRun.TestSeed, 1).
+				WillReturnError(gorm.ErrRecordNotFound)
+
+			mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "spec_runs" ("suite_id","spec_description","status","message","start_time","end_time") VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT ("id") DO UPDATE SET "suite_id"="excluded"."suite_id" RETURNING "id"`)).
+				WithArgs(sqlmock.AnyArg()).
+				WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+
+			mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "suite_runs" ("test_run_id","suite_name","start_time","end_time") VALUES ($1,$2,$3,$4) ON CONFLICT ("id") DO UPDATE SET "test_run_id"="excluded"."test_run_id" RETURNING "id"`)).
+				WithArgs(sqlmock.AnyArg()).
+				WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+
+			mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "suite_runs" ("test_run_id","suite_name","start_time","end_time") VALUES ($1,$2,$3,$4) ON CONFLICT ("id") DO UPDATE SET "test_run_id"="excluded"."test_run_id" RETURNING "id"`)).
 				WithArgs(expectedTestRun.TestProjectName, expectedTestRun.TestSeed, expectedTestRun.StartTime, expectedTestRun.EndTime).
 				WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
+
 			mock.ExpectCommit()
 
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
 
 			// Create a new request with JSON payload
-			jsonStr := []byte(`{"id": 0, "test_project_name":"TestProject"}`)
+			//jsonStr := []byte(`{"id": 0, "test_project_name":"TestProject", "test_seed":0,"start_time":"2024-11-18T16:35:57.660385-08:00","end_time":"2024-11-18T16:35:57.660509-08:00","suite_runs":[]}`)
 			req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
 			if err != nil {
 				fmt.Printf("%v", err)
@@ -202,7 +215,7 @@ var _ = Describe("Handlers", func() {
 			Expect(w.Code).To(Equal(http.StatusBadRequest))
 		})
 
-		It("and test run record exists, it should handle error while finding existing record and return 404 Not Found", func() {
+		It("and a test run record with the same seed exists, it should update the record with the new test suites", func() {
 			expectedTestRun := models.TestRun{
 				ID:              1,
 				TestProjectName: "TestProject",
@@ -238,9 +251,14 @@ var _ = Describe("Handlers", func() {
 			}
 
 			mock.ExpectBegin()
-			mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "test_runs" WHERE id = $1 ORDER BY "test_runs"."id" LIMIT $2`)).
-				WithArgs(expectedTestRun.ID, 1).
-				WillReturnError(errors.New("Record not found DB error"))
+			//TODO: replace this with the query from handlers.go:39 (test_seed = ?):3
+			//mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "test_runs" WHERE id = $1 ORDER BY "test_runs"."id" LIMIT $2`)).
+			//	WithArgs(expectedTestRun.ID, 1).
+			//	WillReturnError(errors.New("Record not found DB error"))
+
+			mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "test_runs" WHERE test_seed = $1 ORDER BY "test_runs"."id" LIMIT 1`)).
+				WithArgs(expectedTestRun.TestSeed).
+				WillReturnError(gorm.ErrRecordNotFound)
 
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
