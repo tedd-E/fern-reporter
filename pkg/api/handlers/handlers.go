@@ -46,7 +46,7 @@ func (h *Handler) CreateTestRun(c *gin.Context) {
 			return
 		}
 		log.Printf("An error occurred when querying for an existing TestRun record: %v", result.Error)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "error fetching an existing TestRun record"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("error fetching an existing TestRun record: %+v", result.Error)})
 		return
 	}
 	// If TestRun already exists in the database, append to it
@@ -60,13 +60,13 @@ func saveTestRun(c *gin.Context, gdb *gorm.DB, testRunDB *models.TestRun) {
 	// Process tags
 	err := ProcessTags(gdb, testRunDB)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "error processing tags"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("error processing tags: %+v", err)})
 		return // Stop further processing if tag processing fails
 	}
 
 	// Save or update the testRun record in the database
 	if err := gdb.Save(testRunDB).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "error saving record"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("error saving record: %+v", err)})
 		return // Stop further processing if save fails
 	}
 

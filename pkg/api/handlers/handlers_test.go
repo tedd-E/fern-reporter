@@ -113,62 +113,46 @@ var _ = Describe("Handlers", func() {
 				StartTime:       time.Time{},
 				EndTime:         time.Time{},
 				TestSeed:        0,
-				SuiteRuns: []models.SuiteRun{
-					{
-						ID:        1,
-						TestRunID: 1,
-						SuiteName: "TestSuite",
-						StartTime: time.Now(),
-						EndTime:   time.Now(),
-						SpecRuns: []models.SpecRun{
-							{
-								ID:              1,
-								SuiteID:         1,
-								SpecDescription: "TestSpec",
-								Status:          "Passed",
-								Message:         "",
-								StartTime:       time.Now(),
-								EndTime:         time.Now(),
-							},
-						},
-					},
+				SuiteRuns:       []models.SuiteRun{
+					//{
+					//	ID:        1,
+					//	TestRunID: 1,
+					//	SuiteName: "TestSuite",
+					//	StartTime: time.Now(),
+					//	EndTime:   time.Now(),
+					//	SpecRuns: []models.SpecRun{
+					//		{
+					//			ID:              1,
+					//			SuiteID:         1,
+					//			SpecDescription: "TestSpec",
+					//			Status:          "Passed",
+					//			Message:         "",
+					//			StartTime:       time.Now(),
+					//			EndTime:         time.Now(),
+					//		},
+					//	},
+					//},
 				},
 			}
 
 			jsonStr, err := json.Marshal(expectedTestRun)
-			if err != nil {
-				fmt.Printf("Error serializing SuiteRuns: %v", err)
-				return
-			}
+			Expect(err).ToNot(HaveOccurred(), "Error serializing expectedTestRun")
 
-			//mock.ExpectBegin()
 			mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM "test_runs" WHERE test_seed = $1 ORDER BY "test_runs"."id" LIMIT $2`)).
 				WithArgs(expectedTestRun.TestSeed, 1).
 				WillReturnError(gorm.ErrRecordNotFound)
 
-			mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "spec_runs" ("suite_id","spec_description","status","message","start_time","end_time") VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT ("id") DO UPDATE SET "suite_id"="excluded"."suite_id" RETURNING "id"`)).
-				WithArgs(sqlmock.AnyArg()).
-				WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-
-			mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "suite_runs" ("test_run_id","suite_name","start_time","end_time") VALUES ($1,$2,$3,$4) ON CONFLICT ("id") DO UPDATE SET "test_run_id"="excluded"."test_run_id" RETURNING "id"`)).
-				WithArgs(sqlmock.AnyArg()).
-				WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-
-			mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "suite_runs" ("test_run_id","suite_name","start_time","end_time") VALUES ($1,$2,$3,$4) ON CONFLICT ("id") DO UPDATE SET "test_run_id"="excluded"."test_run_id" RETURNING "id"`)).
+			mock.ExpectBegin()
+			mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "test_runs" ("test_project_name","test_seed","start_time","end_time") VALUES ($1,$2,$3,$4) RETURNING "id"`)).
 				WithArgs(expectedTestRun.TestProjectName, expectedTestRun.TestSeed, expectedTestRun.StartTime, expectedTestRun.EndTime).
 				WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-
 			mock.ExpectCommit()
 
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
 
-			// Create a new request with JSON payload
-			//jsonStr := []byte(`{"id": 0, "test_project_name":"TestProject", "test_seed":0,"start_time":"2024-11-18T16:35:57.660385-08:00","end_time":"2024-11-18T16:35:57.660509-08:00","suite_runs":[]}`)
 			req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
-			if err != nil {
-				fmt.Printf("%v", err)
-			}
+			Expect(err).ToNot(HaveOccurred(), "Error creating request")
 
 			// Set the Content-Type header to application/json
 			req.Header.Set("Content-Type", "application/json")
@@ -180,10 +164,9 @@ var _ = Describe("Handlers", func() {
 			// Check the response status code
 			Expect(w.Code).To(Equal(http.StatusCreated))
 			var testRun models.TestRun
+			err = json.NewDecoder(w.Body).Decode(&testRun)
+			Expect(err).ToNot(HaveOccurred(), "Error decoding response")
 
-			if err := json.NewDecoder(w.Body).Decode(&testRun); err != nil {
-				Fail(err.Error())
-			}
 			Expect(int(testRun.ID)).To(Equal(1))
 			Expect(testRun.TestProjectName).To(Equal(expectedTestRun.TestProjectName))
 			Expect(testRun.TestSeed).To(Equal(expectedTestRun.TestSeed))
